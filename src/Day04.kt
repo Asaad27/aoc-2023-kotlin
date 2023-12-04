@@ -92,10 +92,34 @@ fun main() {
     check(part1(testInput) == 13)
     check(part2SegmentTree(testInput).also { println(it) } == 30)
     part1(input).println()
-    part2SegmentTree(input).println()
+
+    val executionTimeSegmentTree = computeExecutionTime {
+        part2SegmentTree(input)
+    }
+
+    val executionTimeDP = computeExecutionTime {
+        part2DP(input)
+    }
+
+    val executionTimeBruteForce = computeExecutionTime {
+        part2BruteForce(input)
+    }
+
+    println("brute force execution time: ${executionTimeBruteForce/1000000} ms")
+    println("DP execution time: ${executionTimeDP/1000000} ms")
+    println("segment tree execution time: ${executionTimeSegmentTree/1000000} ms")
+
+
+}
+
+fun computeExecutionTime(block: () -> Unit): Long {
+    val startTime = System.nanoTime()
+    block()
+    return System.nanoTime() - startTime
 }
 
 data class Card(val index: Int, val winningNumbers: Set<Int>, val playerNumbers: Set<Int>)
+
 fun String.toTwoSets(): Pair<Set<Int>, Set<Int>> {
     val (winningNumbersStr, playerNumbersStr) = this.split("|").map(String::trim)
     val winningNumbers = winningNumbersStr.split(" ").filter(String::isNotEmpty).map(String::toInt).toHashSet()
