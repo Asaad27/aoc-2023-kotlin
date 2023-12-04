@@ -12,30 +12,25 @@ fun main() {
 
     fun part2(input: List<String>): Int {
         val cards = input.map { cardString ->
-            val (cardNumberStr, numbersStr) = cardString.split(":").map(String::trim)
-            val cardNumber = cardNumberStr.filter { it.isDigit() }.toInt() - 1
-
+            val (_, numbersStr) = cardString.split(":").map(String::trim)
             val (winningNumbers, playerNumbers) = numbersStr.toTwoSets()
-            Card(cardNumber, winningNumbers, playerNumbers)
+            winningNumbers to playerNumbers
         }
 
-        var totalCards = input.size
-        val queue = ArrayDeque<Card>().apply { addAll(cards) }
+        val dp = IntArray(input.size) { 1 }
 
-        while (queue.isNotEmpty()) {
-            val card = queue.removeFirst()
-            val matches = card.playerNumbers.intersect(card.winningNumbers).size
+        for (i in cards.indices.reversed()) {
+            val (winningNumbers, playerNumbers) = cards[i]
+            val matches = playerNumbers.intersect(winningNumbers).size
 
-            for (i in 1..matches) {
-                val nextCardIndex = card.index + i
-                if (nextCardIndex < cards.size) {
-                    queue.addLast(cards[nextCardIndex])
-                    totalCards++
+            if (matches > 0 && i + matches < input.size) {
+                for (j in i + 1..i + matches) {
+                    dp[i] += dp[j.coerceAtMost(dp.lastIndex)]
                 }
             }
         }
 
-        return totalCards
+        return dp.sum()
     }
 
 
@@ -43,7 +38,7 @@ fun main() {
     val input = readInput("Day04")
 
     check(part1(testInput) == 13)
-    check(part2(testInput) == 30)
+    check(part2(testInput).also { println(it) } == 30)
     part1(input).println()
     part2(input).println()
 }
