@@ -19,16 +19,17 @@ fun main() {
 
         val dp = IntArray(input.size) { 1 }
 
-        for (i in cards.indices.reversed()) {
+        for (i in cards.indices) {
             val (winningNumbers, playerNumbers) = cards[i]
             val matches = playerNumbers.intersect(winningNumbers).size
 
-            if (matches > 0 && i + matches < input.size) {
-                for (j in i + 1..i + matches) {
-                    dp[i] += dp[j.coerceAtMost(dp.lastIndex)]
+            for (j in 1..matches) {
+                if (i + j < dp.size) {
+                    dp[i + j] += dp[i]
                 }
             }
         }
+
 
         return dp.sum()
     }
