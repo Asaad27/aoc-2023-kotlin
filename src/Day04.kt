@@ -81,7 +81,7 @@ fun main() {
             }
         }
 
-        return input.indices.sumOf { segmentTree.query(it, it) }
+        return segmentTree.query(0, input.size - 1)
     }
 
 
@@ -92,6 +92,7 @@ fun main() {
     check(part1(testInput) == 13)
     check(part2SegmentTree(testInput).also { println(it) } == 30)
     part1(input).println()
+    part2SegmentTree(input).println()
 
     val executionTimeSegmentTree = computeExecutionTime {
         part2SegmentTree(input)
