@@ -10,7 +10,35 @@ fun main() {
 
     }
 
-    fun part2(input: List<String>): Int {
+    fun part2BruteForce(input: List<String>): Int {
+        val cards = input.map { cardString ->
+            val (cardNumberStr, numbersStr) = cardString.split(":").map(String::trim)
+            val cardNumber = cardNumberStr.filter { it.isDigit() }.toInt() - 1
+
+            val (winningNumbers, playerNumbers) = numbersStr.toTwoSets()
+            Card(cardNumber, winningNumbers, playerNumbers)
+        }
+
+        var totalCards = input.size
+        val queue = ArrayDeque<Card>().apply { addAll(cards) }
+
+        while (queue.isNotEmpty()) {
+            val card = queue.removeFirst()
+            val matches = card.playerNumbers.intersect(card.winningNumbers).size
+
+            for (i in 1..matches) {
+                val nextCardIndex = card.index + i
+                if (nextCardIndex < cards.size) {
+                    queue.addLast(cards[nextCardIndex])
+                    totalCards++
+                }
+            }
+        }
+
+        return totalCards
+    }
+
+    fun part2DP(input: List<String>): Int {
         val cards = input.map { cardString ->
             val (_, numbersStr) = cardString.split(":").map(String::trim)
             val (winningNumbers, playerNumbers) = numbersStr.toTwoSets()
@@ -34,14 +62,37 @@ fun main() {
         return dp.sum()
     }
 
+    fun part2SegmentTree(input: List<String>): Int {
+        val cards = input.map { cardString ->
+            val (_, numbersStr) = cardString.split(":").map(String::trim)
+            val (winningNumbersStr, playerNumbersStr) = numbersStr.split("|").map(String::trim)
+            val winningNumbers = winningNumbersStr.split(" ").filter(String::isNotEmpty).map(String::toInt).toSet()
+            val playerNumbers = playerNumbersStr.split(" ").filter(String::isNotEmpty).map(String::toInt).toSet()
+            winningNumbers to playerNumbers
+        }
+
+        val segmentTree = SegmentTree(input.size)
+        for (i in cards.indices) {
+            val (winningNumbers, playerNumbers) = cards[i]
+            val matches = playerNumbers.intersect(winningNumbers).size
+
+            if (matches > 0 && i + 1 < input.size) {
+                segmentTree.update(i + 1, minOf(input.size - 1, i + matches), segmentTree.query(i, i))
+            }
+        }
+
+        return input.indices.sumOf { segmentTree.query(it, it) }
+    }
+
+
 
     val testInput = readInput("Day04_test")
     val input = readInput("Day04")
 
     check(part1(testInput) == 13)
-    check(part2(testInput).also { println(it) } == 30)
+    check(part2SegmentTree(testInput).also { println(it) } == 30)
     part1(input).println()
-    part2(input).println()
+    part2SegmentTree(input).println()
 }
 
 data class Card(val index: Int, val winningNumbers: Set<Int>, val playerNumbers: Set<Int>)
@@ -50,5 +101,48 @@ fun String.toTwoSets(): Pair<Set<Int>, Set<Int>> {
     val winningNumbers = winningNumbersStr.split(" ").filter(String::isNotEmpty).map(String::toInt).toHashSet()
     val playerNumbers = playerNumbersStr.split(" ").filter(String::isNotEmpty).map(String::toInt).toHashSet()
     return winningNumbers to playerNumbers
+}
+
+class SegmentTree(private val size: Int) {
+    private val tree = Array(size * 4) { 1 }
+
+    private fun updateRange(node: Int, start: Int, end: Int, l: Int, r: Int, value: Int) {
+        if (l > end || r < start) {
+            return
+        }
+
+        if (start == end) {
+            tree[node] += value
+            return
+        }
+
+        val mid = (start + end) / 2
+        updateRange(node * 2, start, mid, l, r, value)
+        updateRange(node * 2 + 1, mid + 1, end, l, r, value)
+        tree[node] = tree[node * 2] + tree[node * 2 + 1]
+    }
+
+    fun update(l: Int, r: Int, value: Int) {
+        updateRange(1, 0, size - 1, l, r, value)
+    }
+
+    private fun query(node: Int, start: Int, end: Int, l: Int, r: Int): Int {
+        if (l > end || r < start) {
+            return 0
+        }
+
+        if (l <= start && end <= r) {
+            return tree[node]
+        }
+
+        val mid = (start + end) / 2
+        val p1 = query(node * 2, start, mid, l, r)
+        val p2 = query(node * 2 + 1, mid + 1, end, l, r)
+        return p1 + p2
+    }
+
+    fun query(l: Int, r: Int): Int {
+        return query(1, 0, size - 1, l, r)
+    }
 }
 
